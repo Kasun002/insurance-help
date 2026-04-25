@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.api.deps import get_article_repo
+from app.config import get_settings
 from app.core.exceptions import NotFoundError
 from app.models.domain import Article, Category
 from app.models.schemas import (
@@ -18,6 +19,8 @@ from app.models.schemas import (
 from app.repositories.article_repo import ArticleRepo
 
 router = APIRouter(tags=["articles"])
+
+_s = get_settings()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -76,7 +79,7 @@ def _article_to_detail(article: Article, repo: ArticleRepo) -> ArticleDetailResp
                 sub_name = sub.name
                 break
 
-    related_ids = repo.get_related_articles(article, limit=3)
+    related_ids = repo.get_related_articles(article, limit=_s.ARTICLE_RELATED_LIMIT)
 
     return ArticleDetailResponse(
         id=article.id,
@@ -116,7 +119,7 @@ def _article_to_detail(article: Article, repo: ArticleRepo) -> ArticleDetailResp
 def list_articles(
     category_id: str,
     subcategory: str | None = Query(default=None),
-    limit: int = Query(default=20, ge=1, le=100),
+    limit: int = Query(default=_s.ARTICLE_DEFAULT_LIMIT, ge=1, le=_s.ARTICLE_MAX_LIMIT),
     offset: int = Query(default=0, ge=0),
     repo: ArticleRepo = Depends(get_article_repo),
 ) -> ArticleListResponse:

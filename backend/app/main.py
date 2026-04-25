@@ -70,25 +70,30 @@ async def lifespan(app: FastAPI):
     app.state.search_service = SearchService(
         vector_repo=app.state.vector_repo,
         article_repo=app.state.article_repo,
+        keyword_boost=settings.SEARCH_KEYWORD_BOOST,
+        snippet_max_len=settings.SEARCH_SNIPPET_MAX_LEN,
     )
 
     # GeminiClient + RAGService (no-op if API key is absent — fails at request time)
     app.state.llm_client = GeminiClient(
         api_key=settings.GEMINI_API_KEY,
         model_name=settings.GEMINI_MODEL,
+        max_retries=settings.LLM_MAX_RETRIES,
+        temperature=settings.LLM_TEMPERATURE,
     )
     app.state.rag_service = RAGService(
         vector_repo=app.state.vector_repo,
         llm_client=app.state.llm_client,
         article_repo=app.state.article_repo,
+        top_k=settings.RAG_TOP_K,
     )
 
     # Guardrails — stateless singletons, shared across requests
     app.state.input_guardrail = InputGuardrail()
     app.state.output_guardrail = OutputGuardrail()
 
-    # SessionRepo + ChatService (in-memory, 2h TTL)
-    app.state.session_repo = SessionRepo()
+    # SessionRepo + ChatService
+    app.state.session_repo = SessionRepo(ttl_seconds=settings.SESSION_TTL_SECONDS)
     app.state.chat_service = ChatService(
         session_repo=app.state.session_repo,
         rag_service=app.state.rag_service,

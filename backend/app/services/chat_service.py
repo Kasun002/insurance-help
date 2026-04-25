@@ -8,10 +8,11 @@ Delegates retrieval + generation to RAGService.
 import uuid
 from datetime import datetime, timezone
 
+from app.config import get_settings
 from app.core.exceptions import GuardrailError, NotFoundError, ValidationError
-from app.core.guardrails import InputGuardrail, OutputGuardrail
-from app.models.domain import Message, Session
-from app.repositories.article_repo import ArticleRepo
+from app.core.guardrails import BaseInputGuardrail, BaseOutputGuardrail, InputGuardrail, OutputGuardrail
+from app.models.domain import Article, Message, Session
+from app.repositories.base import BaseArticleRepo
 from app.repositories.session_repo import SessionRepo
 from app.services.rag_service import RAGResponse, RAGService
 
@@ -29,9 +30,9 @@ class ChatService:
         self,
         session_repo: SessionRepo,
         rag_service: RAGService,
-        article_repo: ArticleRepo,
-        input_guardrail: InputGuardrail | None = None,
-        output_guardrail: OutputGuardrail | None = None,
+        article_repo: BaseArticleRepo,
+        input_guardrail: BaseInputGuardrail | None = None,
+        output_guardrail: BaseOutputGuardrail | None = None,
         guardrails_enabled: bool = True,
     ) -> None:
         self._sessions = session_repo
@@ -64,6 +65,10 @@ class ChatService:
             )
         return session
 
+    def get_article(self, article_id: str) -> Article | None:
+        """Public delegation — keeps callers from accessing private _articles."""
+        return self._articles.get_article(article_id)
+
     # ── Messaging ─────────────────────────────────────────────────────────────
 
     async def send_message(
@@ -75,10 +80,11 @@ class ChatService:
         Append user message, call RAGService with full history,
         append assistant response, return RAGResponse.
         """
+        max_len = get_settings().CHAT_MESSAGE_MAX_LEN
         if not user_content.strip():
             raise ValidationError("Message must not be empty")
-        if len(user_content) > 2000:
-            raise ValidationError("Message must be 2000 characters or fewer")
+        if len(user_content) > max_len:
+            raise ValidationError(f"Message must be {max_len} characters or fewer")
 
         # ── Input guardrail ────────────────────────────────────────────────────
         if self._guardrails_enabled:

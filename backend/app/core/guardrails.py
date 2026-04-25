@@ -12,6 +12,7 @@ OutputGuardrail — runs AFTER Gemini, on the generated response.
 import logging
 import re
 from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -222,3 +223,19 @@ class OutputGuardrail:
             logger.info("Output guardrail: appending safety disclaimer")
             content = content.rstrip() + _SENSITIVE_DISCLAIMER
         return content
+
+
+# ── Protocols ──────────────────────────────────────────────────────────────────
+# Structural interfaces for the guardrail layer.
+# Any class with matching method signatures satisfies these — no explicit
+# inheritance required. Use these as type hints in services and deps.
+
+
+@runtime_checkable
+class BaseInputGuardrail(Protocol):
+    def check(self, text: str) -> GuardResult: ...
+
+
+@runtime_checkable
+class BaseOutputGuardrail(Protocol):
+    def check(self, content: str, retrieved_chunks: int) -> str: ...

@@ -7,6 +7,7 @@ Async Gemini wrapper with exponential backoff retry on rate-limit / server error
 import asyncio
 import logging
 import time
+from abc import ABC, abstractmethod
 
 import google.generativeai as genai
 
@@ -17,22 +18,31 @@ logger = logging.getLogger(__name__)
 _RETRYABLE_STATUS = {"429", "503", "500"}
 
 
-class GeminiClient:
-    def __init__(self, api_key: str, model_name: str) -> None:
-        genai.configure(api_key=api_key)
-        self._model_name = model_name
+class BaseLLMClient(ABC):
+    """Abstract base for all LLM provider clients."""
 
-    async def generate(
+    @abstractmethod
+    async def generate(self, prompt: str, system: str = "") -> str: ...
+
+
+class GeminiClient(BaseLLMClient):
+    def __init__(
         self,
-        prompt: str,
-        system: str = "",
+        api_key: str,
+        model_name: str,
         max_retries: int = 3,
         temperature: float = 0.2,
-    ) -> str:
+    ) -> None:
+        genai.configure(api_key=api_key)
+        self._model_name = model_name
+        self._max_retries = max_retries
+        self._temperature = temperature
+
+    async def generate(self, prompt: str, system: str = "") -> str:
         """
         Generate a response from Gemini.
 
-        Retries up to max_retries times with exponential backoff on 429 / 503.
+        Retries up to self._max_retries times with exponential backoff on 429 / 503.
         Raises RateLimitError or LLMError on unrecoverable failure.
         """
         model = genai.GenerativeModel(
@@ -41,14 +51,14 @@ class GeminiClient:
         )
 
         last_exc: Exception | None = None
-        for attempt in range(1, max_retries + 1):
+        for attempt in range(1, self._max_retries + 1):
             t0 = time.perf_counter()
             try:
                 # google-generativeai is synchronous; run in thread pool
                 response = await asyncio.to_thread(
                     model.generate_content,
                     prompt,
-                    generation_config=genai.GenerationConfig(temperature=temperature),
+                    generation_config=genai.GenerationConfig(temperature=self._temperature),
                 )
                 latency_ms = int((time.perf_counter() - t0) * 1000)
                 logger.info(
@@ -65,14 +75,14 @@ class GeminiClient:
                 is_rate_limit = "429" in exc_str or "quota" in exc_str.lower() or "rate" in exc_str.lower()
                 is_retryable = is_rate_limit or "503" in exc_str or "500" in exc_str
 
-                if not is_retryable or attempt == max_retries:
+                if not is_retryable or attempt == self._max_retries:
                     break
 
-                wait = 2 ** attempt  # 2s, 4s, 8s
+                wait = 2 ** attempt  # exponential backoff: 2s, 4s, 8s
                 logger.warning(
                     "Gemini attempt %d/%d failed (%s) — retrying in %ds",
                     attempt,
-                    max_retries,
+                    self._max_retries,
                     exc_str[:80],
                     wait,
                 )
@@ -84,4 +94,4 @@ class GeminiClient:
             raise RateLimitError(
                 "Gemini rate limit reached. Please wait a moment and try again."
             )
-        raise LLMError(f"Gemini generation failed after {max_retries} attempts: {exc_str[:200]}")
+        raise LLMError(f"Gemini generation failed after {self._max_retries} attempts: {exc_str[:200]}")

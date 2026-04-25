@@ -10,9 +10,6 @@ from datetime import datetime, timezone
 
 from app.models.domain import Message, Session
 
-TTL_SECONDS = 2 * 60 * 60  # 2 hours
-
-
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -22,7 +19,8 @@ def _now_ts() -> float:
 
 
 class SessionRepo:
-    def __init__(self) -> None:
+    def __init__(self, ttl_seconds: int = 7200) -> None:
+        self._ttl_seconds = ttl_seconds
         self._sessions: dict[str, Session] = {}
         self._last_active: dict[str, float] = {}
 
@@ -45,7 +43,7 @@ class SessionRepo:
             return None
         # TTL check
         last = self._last_active.get(session_id, 0.0)
-        if _now_ts() - last > TTL_SECONDS:
+        if _now_ts() - last > self._ttl_seconds:
             del self._sessions[session_id]
             del self._last_active[session_id]
             return None

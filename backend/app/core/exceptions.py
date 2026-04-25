@@ -1,6 +1,8 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from app.config import get_settings
+
 
 class AppError(Exception):
     def __init__(self, code: str, message: str, status_code: int = 500):
@@ -77,7 +79,7 @@ async def app_error_handler(request: Request, exc: Exception) -> JSONResponse:
     err = exc if isinstance(exc, AppError) else AppError("INTERNAL_ERROR", str(exc))
     headers = {}
     if isinstance(err, RateLimitError):
-        headers["Retry-After"] = "10"
+        headers["Retry-After"] = str(get_settings().LLM_RETRY_AFTER_SECONDS)
     return JSONResponse(
         status_code=err.status_code,
         content={"error": {"code": err.code, "message": err.message}},

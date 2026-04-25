@@ -16,8 +16,7 @@ import re
 from dataclasses import dataclass
 
 from app.models.domain import Chunk
-from app.repositories.article_repo import ArticleRepo
-from app.repositories.vector_repo import VectorRepo
+from app.repositories.base import BaseArticleRepo, BaseVectorRepo
 
 
 @dataclass
@@ -36,9 +35,17 @@ class SearchResult:
 
 
 class SearchService:
-    def __init__(self, vector_repo: VectorRepo, article_repo: ArticleRepo) -> None:
+    def __init__(
+        self,
+        vector_repo: BaseVectorRepo,
+        article_repo: BaseArticleRepo,
+        keyword_boost: float = 0.15,
+        snippet_max_len: int = 200,
+    ) -> None:
         self._vector = vector_repo
         self._articles = article_repo
+        self._keyword_boost = keyword_boost
+        self._snippet_max_len = snippet_max_len
 
     def search(self, query: str, limit: int = 10) -> list[SearchResult]:
         if not query.strip():
@@ -58,7 +65,7 @@ class SearchService:
             title = hit.metadata.get("article_title", "")
             title_tokens = set(re.findall(r"[a-z]+", title.lower()))
             overlap = len(query_tokens & title_tokens) / max(len(query_tokens), 1)
-            hit.score = round(hit.score + 0.15 * overlap, 4)
+            hit.score = round(hit.score + self._keyword_boost * overlap, 4)
             boosted.append(hit)
 
         # ── 4. Dedupe by article_id — keep highest-scoring chunk ──────────────
@@ -89,7 +96,7 @@ class SearchService:
                         break
 
             # ── 6. Build 200-char snippet from the matched chunk ──────────────
-            snippet = self._make_snippet(chunk.document, query)
+            snippet = self._make_snippet(chunk.document, query, self._snippet_max_len)
 
             results.append(
                 SearchResult(

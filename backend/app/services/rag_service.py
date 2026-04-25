@@ -15,11 +15,10 @@ RAG pipeline: retrieve relevant chunks → build grounded prompt → generate vi
 import time
 from dataclasses import dataclass, field
 
-from app.core.llm_client import GeminiClient
+from app.core.llm_client import BaseLLMClient
 from app.core.prompts import SYSTEM_PROMPT, build_rag_prompt, format_history
 from app.models.domain import Chunk, Message
-from app.repositories.article_repo import ArticleRepo
-from app.repositories.vector_repo import VectorRepo
+from app.repositories.base import BaseArticleRepo, BaseVectorRepo
 
 
 @dataclass
@@ -42,20 +41,21 @@ class RAGResponse:
 class RAGService:
     def __init__(
         self,
-        vector_repo: VectorRepo,
-        llm_client: GeminiClient,
-        article_repo: ArticleRepo,
+        vector_repo: BaseVectorRepo,
+        llm_client: BaseLLMClient,
+        article_repo: BaseArticleRepo,
+        top_k: int = 5,
     ) -> None:
         self._vector = vector_repo
         self._llm = llm_client
         self._articles = article_repo
+        self._top_k = top_k
 
     async def answer(
         self,
         query: str,
         chat_history: list[Message] | None = None,
         seed_article_id: str | None = None,
-        top_k: int = 5,
     ) -> RAGResponse:
         t0 = time.perf_counter()
         history = chat_history or []
@@ -67,7 +67,7 @@ class RAGService:
 
         # ── 2. Similarity search ───────────────────────────────────────────────
         chunks: list[Chunk] = self._vector.similarity_search(
-            query, top_k=top_k, where=where
+            query, top_k=self._top_k, where=where
         )
 
         # ── 3. Dedupe by article_id — keep highest-scoring chunk ───────────────

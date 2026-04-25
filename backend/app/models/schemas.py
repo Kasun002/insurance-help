@@ -5,6 +5,10 @@ Mirrors plan.md Section 5 contracts exactly.
 
 from pydantic import BaseModel, Field
 
+from app.config import get_settings
+
+_s = get_settings()
+
 
 # ── Shared sub-models ────────────────────────────────────────────────────────
 
@@ -156,7 +160,7 @@ class CreateSessionResponse(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=2000)
+    message: str = Field(..., min_length=1, max_length=_s.CHAT_MESSAGE_MAX_LEN)
 
 
 class SourceCitation(BaseModel):

@@ -26,7 +26,7 @@ async def create_session(
 
     seed_article = None
     if session.seed_article_id:
-        article = service._articles.get_article(session.seed_article_id)
+        article = service.get_article(session.seed_article_id)
         if article:
             seed_article = SeedArticleRef(id=article.id, title=article.title)
 

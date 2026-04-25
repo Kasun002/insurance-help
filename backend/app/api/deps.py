@@ -10,7 +10,7 @@ from app.repositories.base import BaseArticleRepo, BaseVectorRepo
 from app.services.search_service import SearchService
 from app.services.rag_service import RAGService
 from app.services.chat_service import ChatService
-from app.core.guardrails import InputGuardrail, OutputGuardrail
+from app.core.guardrails import BaseInputGuardrail, BaseOutputGuardrail
 
 
 def get_config(settings: Settings = Depends(get_settings)) -> Settings:
@@ -37,9 +37,9 @@ def get_chat_service(request: Request) -> ChatService:
     return request.app.state.chat_service
 
 
-def get_input_guardrail(request: Request) -> InputGuardrail:
+def get_input_guardrail(request: Request) -> BaseInputGuardrail:
     return request.app.state.input_guardrail
 
 
-def get_output_guardrail(request: Request) -> OutputGuardrail:
+def get_output_guardrail(request: Request) -> BaseOutputGuardrail:
     return request.app.state.output_guardrail

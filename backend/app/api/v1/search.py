@@ -3,24 +3,26 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import get_input_guardrail, get_search_service
 from app.config import get_settings
 from app.core.exceptions import GuardrailError, ValidationError
-from app.core.guardrails import InputGuardrail
+from app.core.guardrails import BaseInputGuardrail
 from app.models.schemas import CategoryRef, SearchResponse, SearchResultItem, SubcategoryRef
 from app.services.search_service import SearchService
 
 router = APIRouter(tags=["search"])
 
+_s = get_settings()
+
 
 @router.get("/search", response_model=SearchResponse)
 def search_articles(
     q: str = Query(..., description="Search query"),
-    limit: int = Query(default=10, ge=1, le=50),
+    limit: int = Query(default=_s.SEARCH_DEFAULT_LIMIT, ge=1, le=_s.SEARCH_MAX_LIMIT),
     service: SearchService = Depends(get_search_service),
-    input_guardrail: InputGuardrail = Depends(get_input_guardrail),
+    input_guardrail: BaseInputGuardrail = Depends(get_input_guardrail),
 ) -> SearchResponse:
     if not q.strip():
         raise ValidationError("Query parameter 'q' must not be empty")
-    if len(q) > 200:
-        raise ValidationError("Query parameter 'q' must be 200 characters or fewer")
+    if len(q) > _s.SEARCH_QUERY_MAX_LEN:
+        raise ValidationError(f"Query parameter 'q' must be {_s.SEARCH_QUERY_MAX_LEN} characters or fewer")
 
     if get_settings().GUARDRAILS_ENABLED:
         guard_result = input_guardrail.check(q.strip())
