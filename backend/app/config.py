@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # Environment — "local" uses TinyDB + ChromaDB, "prod" uses MongoDB + pgvector
     ENV: str = "local"
 
+    # Telemetry — False locally (just console logs), True in prod (Railway)
+    ANONYMIZED_TELEMETRY: bool = False
+
     # Storage — local
     ARTICLES_DB_PATH: str = "app/data/articles.json"
     CHROMA_PERSIST_DIR: str = "app/data/chroma"

@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -20,6 +21,12 @@ from app.services.chat_service import ChatService
 async def lifespan(app: FastAPI):
     settings = get_settings()
     app.state.settings = settings
+
+    # Propagate telemetry setting to os.environ BEFORE any DB client initialises.
+    # ChromaDB (and other libs) read ANONYMIZED_TELEMETRY directly from the environment.
+    # Local: False  → no external telemetry, console logs only.
+    # Prod:  True   → Railway can capture and forward telemetry.
+    os.environ["ANONYMIZED_TELEMETRY"] = str(settings.ANONYMIZED_TELEMETRY).lower()
 
     # ── Repo factory: local (TinyDB + ChromaDB) vs prod (MongoDB + pgvector) ──
     article_repo: BaseArticleRepo
