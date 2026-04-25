@@ -15,6 +15,7 @@ from app.core.llm_client import GeminiClient
 from app.services.rag_service import RAGService
 from app.repositories.session_repo import SessionRepo
 from app.services.chat_service import ChatService
+from app.core.guardrails import InputGuardrail, OutputGuardrail
 
 
 @asynccontextmanager
@@ -82,12 +83,19 @@ async def lifespan(app: FastAPI):
         article_repo=app.state.article_repo,
     )
 
+    # Guardrails — stateless singletons, shared across requests
+    app.state.input_guardrail = InputGuardrail()
+    app.state.output_guardrail = OutputGuardrail()
+
     # SessionRepo + ChatService (in-memory, 2h TTL)
     app.state.session_repo = SessionRepo()
     app.state.chat_service = ChatService(
         session_repo=app.state.session_repo,
         rag_service=app.state.rag_service,
         article_repo=app.state.article_repo,
+        input_guardrail=app.state.input_guardrail,
+        output_guardrail=app.state.output_guardrail,
+        guardrails_enabled=settings.GUARDRAILS_ENABLED,
     )
 
     yield

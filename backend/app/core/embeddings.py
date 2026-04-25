@@ -22,4 +22,4 @@ class EmbeddingClient:
 
     @property
     def dimension(self) -> int:
-        return self._model.get_sentence_embedding_dimension()  # type: ignore[return-value]
+        return self._model.get_sentence_embedding_dimension()  # type: ignore[return-value]  # ty:ignore[invalid-return-type]

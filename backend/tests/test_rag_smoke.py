@@ -122,11 +122,11 @@ class TestChatSmoke:
 
             client.post(
                 f"/api/v1/chat/sessions/{session_id}/messages",
-                json={"message": "What documents do I need to make a claim?"},
+                json={"message": "What documents do I need to make a travel claim?"},
             )
             client.post(
                 f"/api/v1/chat/sessions/{session_id}/messages",
-                json={"message": "How long does it take to process?"},
+                json={"message": "How long does a travel insurance claim take to process?"},
             )
 
             history_r = client.get(f"/api/v1/chat/sessions/{session_id}/messages")

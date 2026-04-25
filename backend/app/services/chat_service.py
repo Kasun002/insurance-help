@@ -8,7 +8,8 @@ Delegates retrieval + generation to RAGService.
 import uuid
 from datetime import datetime, timezone
 
-from app.core.exceptions import NotFoundError, ValidationError
+from app.core.exceptions import GuardrailError, NotFoundError, ValidationError
+from app.core.guardrails import InputGuardrail, OutputGuardrail
 from app.models.domain import Message, Session
 from app.repositories.article_repo import ArticleRepo
 from app.repositories.session_repo import SessionRepo
@@ -29,10 +30,16 @@ class ChatService:
         session_repo: SessionRepo,
         rag_service: RAGService,
         article_repo: ArticleRepo,
+        input_guardrail: InputGuardrail | None = None,
+        output_guardrail: OutputGuardrail | None = None,
+        guardrails_enabled: bool = True,
     ) -> None:
         self._sessions = session_repo
         self._rag = rag_service
         self._articles = article_repo
+        self._input_guard = input_guardrail or InputGuardrail()
+        self._output_guard = output_guardrail or OutputGuardrail()
+        self._guardrails_enabled = guardrails_enabled
 
     # ── Session ───────────────────────────────────────────────────────────────
 
@@ -73,6 +80,12 @@ class ChatService:
         if len(user_content) > 2000:
             raise ValidationError("Message must be 2000 characters or fewer")
 
+        # ── Input guardrail ────────────────────────────────────────────────────
+        if self._guardrails_enabled:
+            result = self._input_guard.check(user_content)
+            if not result.passed:
+                raise GuardrailError(reason=result.reason or "blocked")
+
         session = self.get_session(session_id)
 
         # Append user message
@@ -93,6 +106,13 @@ class ChatService:
             chat_history=history,
             seed_article_id=session.seed_article_id,
         )
+
+        # ── Output guardrail ───────────────────────────────────────────────────
+        if self._guardrails_enabled:
+            rag_response.content = self._output_guard.check(
+                content=rag_response.content,
+                retrieved_chunks=rag_response.retrieved_chunks,
+            )
 
         # Append assistant message
         assistant_msg = Message(

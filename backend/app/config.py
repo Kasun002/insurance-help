@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # Guardrails — set False to bypass in dev/tests
+    GUARDRAILS_ENABLED: bool = True
+
     # RAG
     RAG_TOP_K: int = 5
     RAG_CHUNK_SIZE: int = 500

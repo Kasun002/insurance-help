@@ -33,6 +33,24 @@ class RateLimitError(LLMError):
         Exception.__init__(self, message)
 
 
+class GuardrailError(AppError):
+    """
+    Raised when input or output guardrails block a request.
+
+    `reason` is for internal logging only — never surfaced to the user.
+    User-facing `message` is always generic to avoid revealing detection logic.
+    """
+    REASONS = frozenset({"pii", "off_topic", "injection", "unsafe_output"})
+
+    def __init__(
+        self,
+        reason: str,
+        message: str = "Your request could not be processed. Please rephrase and try again.",
+    ):
+        self.reason = reason  # internal only
+        super().__init__(code="GUARDRAIL_BLOCKED", message=message, status_code=400)
+
+
 # FastAPI exception handlers — registered in main.py
 
 async def app_error_handler(request: Request, exc: Exception) -> JSONResponse:
