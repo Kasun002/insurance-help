@@ -1,7 +1,7 @@
 import { apiFetch } from './client'
 import type { SearchResult, SearchResponse } from '@/types/api'
 
-export async function searchArticles(q: string, limit = 10): Promise<SearchResult[]> {
+export async function searchArticles(q: string, limit = 3): Promise<SearchResult[]> {
   const data = await apiFetch<SearchResponse>(
     `/search?q=${encodeURIComponent(q)}&limit=${limit}`
   )
