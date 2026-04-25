@@ -37,18 +37,38 @@ class GuardrailError(AppError):
     """
     Raised when input or output guardrails block a request.
 
-    `reason` is for internal logging only — never surfaced to the user.
-    User-facing `message` is always generic to avoid revealing detection logic.
+    `reason` drives the user-facing code and message.
+    Injection reason is intentionally vague to avoid revealing detection logic.
     """
-    REASONS = frozenset({"pii", "off_topic", "injection", "unsafe_output"})
 
-    def __init__(
-        self,
-        reason: str,
-        message: str = "Your request could not be processed. Please rephrase and try again.",
-    ):
-        self.reason = reason  # internal only
-        super().__init__(code="GUARDRAIL_BLOCKED", message=message, status_code=400)
+    _REASON_MAP: dict[str, tuple[str, str]] = {
+        "pii": (
+            "GUARDRAIL_PII",
+            "Your message appears to contain personal information (such as an ID number, "
+            "phone number, or card number). Please remove it and try again.",
+        ),
+        "off_topic": (
+            "GUARDRAIL_OFF_TOPIC",
+            "This assistant only answers questions about Great Eastern insurance products "
+            "and services. Please ask an insurance-related question.",
+        ),
+        "injection": (
+            "GUARDRAIL_BLOCKED",
+            "Your request could not be processed. Please rephrase and try again.",
+        ),
+        "unsafe_output": (
+            "GUARDRAIL_BLOCKED",
+            "Your request could not be processed. Please rephrase and try again.",
+        ),
+    }
+
+    def __init__(self, reason: str):
+        self.reason = reason  # internal only — used for logging
+        code, message = self._REASON_MAP.get(
+            reason,
+            ("GUARDRAIL_BLOCKED", "Your request could not be processed. Please rephrase and try again."),
+        )
+        super().__init__(code=code, message=message, status_code=400)
 
 
 # FastAPI exception handlers — registered in main.py
