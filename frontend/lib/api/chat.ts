@@ -19,10 +19,12 @@ export async function createSession(seedArticleId?: string): Promise<ChatSession
 
 export async function sendMessage(
   sessionId: string,
-  message: string
+  message: string,
+  signal?: AbortSignal
 ): Promise<ChatMessageResponse> {
   return apiFetch<ChatMessageResponse>(`/chat/sessions/${sessionId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ message }),
+    signal,
   })
 }

@@ -1,5 +1,8 @@
 'use client'
 
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import type { Components } from 'react-markdown'
 import type { ChatMessage } from '@/types/api'
 import SourceCitation from './SourceCitation'
 
@@ -24,6 +27,23 @@ function ThinkingDots() {
   )
 }
 
+// Compact markdown components for chat bubbles
+const chatMdComponents: Components = {
+  p: ({ children }) => <p className="mb-1.5 last:mb-0">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc list-outside ml-4 mb-1.5 space-y-0.5">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal list-outside ml-4 mb-1.5 space-y-0.5">{children}</ol>,
+  li: ({ children }) => <li>{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+  a: ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-80">
+      {children}
+    </a>
+  ),
+  code: ({ children }) => (
+    <code className="bg-black/10 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
+  ),
+}
+
 export default function MessageBubble({
   message,
   isLastMessage,
@@ -46,7 +66,13 @@ export default function MessageBubble({
                 : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm'
           }`}
         >
-          {message.content}
+          {isUser ? (
+            message.content
+          ) : (
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={chatMdComponents}>
+              {message.content}
+            </ReactMarkdown>
+          )}
         </div>
       </div>
 

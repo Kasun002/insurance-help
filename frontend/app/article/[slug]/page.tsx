@@ -1,4 +1,5 @@
 import { fetchArticle } from '@/lib/api/articles'
+import { ApiError } from '@/lib/api/client'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +17,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   let article
   try {
     article = await fetchArticle(slug)
-  } catch {
+  } catch (err) {
+    // Only treat 404 as a missing page — re-throw network/server errors
+    if (err instanceof ApiError && err.status !== 404) throw err
     notFound()
   }
 

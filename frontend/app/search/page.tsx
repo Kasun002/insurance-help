@@ -70,10 +70,11 @@ function SearchResults() {
   // Push URL when debounced input changes (and differs from current URL param)
   useEffect(() => {
     const trimmed = debouncedInput.trim()
-    if (trimmed && trimmed !== initialQ) {
+    const currentQ = searchParams.get('q') ?? ''
+    if (trimmed && trimmed !== currentQ) {
       router.replace(`/search?q=${encodeURIComponent(trimmed)}`)
     }
-  }, [debouncedInput]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedInput, searchParams, router])
 
   const q = initialQ // use committed URL param as query key
   const { data: results = [], isLoading, isFetching } = useSearch(q)

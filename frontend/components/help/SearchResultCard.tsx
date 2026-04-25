@@ -17,13 +17,14 @@ function HighlightedSnippet({ text, query }: { text: string; query: string }) {
     .filter(Boolean)
     .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
 
+  // Split with a capture group — odd-indexed parts are the matched terms
   const pattern = new RegExp(`(${terms.join('|')})`, 'gi')
   const parts = text.split(pattern)
 
   return (
     <>
       {parts.map((part, i) =>
-        pattern.test(part) ? (
+        i % 2 === 1 ? (
           <mark key={i} className="bg-yellow-100 text-yellow-900 font-medium rounded-sm px-0.5">
             {part}
           </mark>

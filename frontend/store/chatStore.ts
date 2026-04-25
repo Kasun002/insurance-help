@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { createSession, sendMessage as apiSendMessage } from '@/lib/api/chat'
+import { ApiError } from '@/lib/api/client'
 import type { ChatMessage } from '@/types/api'
 
 const SESSION_KEY = 'insurehelp_chat_session'
@@ -27,16 +28,19 @@ function makeOptimisticUserMsg(content: string, sessionId: string): ChatMessage 
   }
 }
 
-function makeErrorMsg(sessionId: string): ChatMessage {
+function makeErrorMsg(sessionId: string, text?: string): ChatMessage {
   return {
     id: `err_${Date.now()}`,
     session_id: sessionId,
     role: 'assistant',
-    content: 'Sorry, something went wrong. Please try again.',
+    content: text ?? 'Sorry, something went wrong. Please try again.',
     created_at: new Date().toISOString(),
     error: true,
   }
 }
+
+// Module-level abort controller — not reactive, just used to cancel in-flight requests
+let activeController: AbortController | null = null
 
 interface ChatState {
   isOpen: boolean
@@ -52,20 +56,24 @@ interface ChatState {
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
+  // Start with null — load from localStorage lazily on first openChat (SSR-safe)
   isOpen: false,
-  sessionId: loadPersistedSessionId(),
+  sessionId: null,
   messages: [],
   isGenerating: false,
   seedArticleId: null,
 
   openChat: async (seedArticleId) => {
+    // Lazily restore persisted session on first open
+    const persisted = loadPersistedSessionId()
     const state = get()
+    const currentSessionId = state.sessionId ?? persisted
 
     // If seed article changed, start a fresh session
     const needNewSession =
       seedArticleId !== undefined && seedArticleId !== state.seedArticleId
 
-    if (needNewSession || state.sessionId === null) {
+    if (needNewSession || !currentSessionId) {
       try {
         const session = await createSession(seedArticleId)
         persistSessionId(session.session_id)
@@ -76,17 +84,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: [],
         })
       } catch {
-        // Fall through — open widget anyway, sendMessage will create session lazily
+        // Open widget anyway — sendMessage will create the session lazily
         set({ isOpen: true, seedArticleId: seedArticleId ?? null })
       }
     } else {
-      set({ isOpen: true })
+      set({ isOpen: true, sessionId: currentSessionId })
     }
   },
 
   closeChat: () => set({ isOpen: false }),
 
   sendMessage: async (content: string) => {
+    // 2.5: deduplication guard — ignore if already waiting for a response
+    if (get().isGenerating) return
+
     let { sessionId } = get()
 
     // Lazily create session if missing
@@ -97,25 +108,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
         persistSessionId(sessionId)
         set({ sessionId })
       } catch {
-        set((s) => ({
-          messages: [
-            ...s.messages,
-            makeErrorMsg('unknown'),
-          ],
-        }))
+        set((s) => ({ messages: [...s.messages, makeErrorMsg('unknown')] }))
         return
       }
     }
 
+    // 2.4: cancel any previous in-flight request and start a new controller
+    activeController?.abort()
+    activeController = new AbortController()
+    const { signal } = activeController
+
     // Optimistic user bubble
     const userMsg = makeOptimisticUserMsg(content, sessionId)
-    set((s) => ({
-      messages: [...s.messages, userMsg],
-      isGenerating: true,
-    }))
+    set((s) => ({ messages: [...s.messages, userMsg], isGenerating: true }))
 
     try {
-      const response = await apiSendMessage(sessionId, content)
+      const response = await apiSendMessage(sessionId, content, signal)
+
+      // If request was aborted (e.g. resetSession called mid-flight), do nothing
+      if (signal.aborted) return
+
       const assistantMsg: ChatMessage = {
         id: response.message_id,
         session_id: response.session_id,
@@ -124,22 +136,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
         sources: response.sources,
         created_at: response.created_at,
       }
-      set((s) => ({
-        messages: [...s.messages, assistantMsg],
-        isGenerating: false,
-      }))
+      set((s) => ({ messages: [...s.messages, assistantMsg], isGenerating: false }))
     } catch (err) {
-      const errMsg = makeErrorMsg(sessionId)
-      // Preserve the original error text if available
-      if (err instanceof Error) errMsg.content = err.message
+      if (signal.aborted) return
+
+      // 4.3: stale/expired session — clear it so the next send creates a fresh one
+      if (err instanceof ApiError && (err.status === 404 || err.status === 410)) {
+        persistSessionId(null)
+        set({ sessionId: null })
+      }
+
+      const text = err instanceof Error ? err.message : undefined
       set((s) => ({
-        messages: [...s.messages, errMsg],
+        messages: [...s.messages, makeErrorMsg(sessionId!, text)],
         isGenerating: false,
       }))
     }
   },
 
   resetSession: () => {
+    // 2.4: abort any in-flight request so isGenerating doesn't stay stuck
+    activeController?.abort()
+    activeController = null
     persistSessionId(null)
     set({ sessionId: null, messages: [], isGenerating: false, seedArticleId: null })
   },

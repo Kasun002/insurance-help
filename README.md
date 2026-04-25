@@ -24,4 +24,5 @@ cd frontend
 npm install
 cp .env.local.example .env.local
 npm run dev
+pkill -f uvicorn && sleep 1 && source venv/bin/activate && uvicorn app.main:app --reload --port 8000
 ```
