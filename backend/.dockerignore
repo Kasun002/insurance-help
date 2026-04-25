@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment secrets — never bake into image
+.env
+.env.*
+!.env.example
+
+# Dev/test artifacts
+tests/
+scripts/
+*.log
+
+# OS
+.DS_Store

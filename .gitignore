@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+.env
+.env.local
+
+# Node
+node_modules/
+.next/
+.env.local
+*.tsbuildinfo
+
+# Data & models (large, not committed)
+backend/app/data/chroma/
+backend/app/data/articles_raw.json
+
+# Sentence-transformers cache
+.cache/
+~/.cache/huggingface/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+uvicorn.log

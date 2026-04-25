@@ -1,0 +1,74 @@
+# Great Eastern Singapore — Self-Service Guide Target URLs
+# Discovered from: https://www.greateasternlife.com/sg/en/customer-services/guides.html
+# All URLs verified live. Base: https://www.greateasternlife.com
+
+# ── CLAIMS ───────────────────────────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/claims/travel/make-a-travel-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/motor-accident/make-a-motor-accident-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/critical-illness/make-a-critical-illness-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/critical-illness/make-a-child-related-illness-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/critical-illness/make-a-female-related-illness-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/death/make-a-death-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/disability/make-a-disability-income-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/disability/make-a-long-term-care-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/disability/make-a-total-and-permanent-disability-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/medical-hospitalisation/make-a-new-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/medical-hospitalisation/letter-of-guarantee.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/medical-hospitalisation/make-a-pre-and-post-hospitalisation-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/medical-hospitalisation/health-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/personal-accident/make-a-personal-accident-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/retrenchment/make-a-retrenchment-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/terminal-illness/make-a-terminal-illness-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/careshield-eldershield/make-a-careshield-eldershield-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/work-injury/make-a-work-injury-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/maid-foreign-workers/make-an-injury-hospitalisation-or-death-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/property-damage/make-a-property-damage-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/claims/personal-or-public-liability/make-a-personal-or-public-liability-claim.html
+
+# ── POLICY MANAGEMENT ────────────────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-assignment/assign-policy-to-new-owner.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-nomination/make-a-policy-nomination.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-nomination/revoke-a-nomination-or-remove-a-beneficiary.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-reinstatement/reinstate-a-lapsed-policy.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-surrender/policy-surrender.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-payout/receive-policy-payout.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-payout/change-payout-method.html
+https://www.greateasternlife.com/sg/en/customer-services/policy-management/policy-benefits/withdraw-cash-benefit.html
+
+# ── PAYMENT ──────────────────────────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/payment/apply-maintain-giro-account.html
+https://www.greateasternlife.com/sg/en/customer-services/payment/change-payment-method.html
+https://www.greateasternlife.com/sg/en/customer-services/payment/change-payment-frequency.html
+https://www.greateasternlife.com/sg/en/customer-services/payment/make-renewal-or-regular-premium-payments.html
+https://www.greateasternlife.com/sg/en/customer-services/payment/gst-rate-change.html
+https://www.greateasternlife.com/sg/en/customer-services/payment/make-a-first-premium-payment.html
+
+# ── DEPENDANTS' PROTECTION SCHEME ────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/dependants-protection-scheme-dps/learn-more-about-dps.html
+https://www.greateasternlife.com/sg/en/customer-services/dependants-protection-scheme-dps/make-a-policy-nomination.html
+https://www.greateasternlife.com/sg/en/customer-services/dependants-protection-scheme-dps/change-payment-method-and-cpf-authorisation-for-dps.html
+https://www.greateasternlife.com/sg/en/customer-services/dependants-protection-scheme-dps/reinstate-policy-for-dps.html
+https://www.greateasternlife.com/sg/en/customer-services/dependants-protection-scheme-dps/make-a-claim/make-a-death-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/dependants-protection-scheme-dps/make-a-claim/make-a-total-and-permanent-disability-claim.html
+
+# ── CARESHIELD & ELDERSHIELD ─────────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/careshield-and-eldershield/make-a-careshield-or-eldershield-claim.html
+https://www.greateasternlife.com/sg/en/customer-services/careshield-and-eldershield/change-payment-method-for-great-careshield-or-eldershield-supplement.html
+https://www.greateasternlife.com/sg/en/customer-services/careshield-and-eldershield/reinstate-policy-for-great-careshield-or-eldershield-supplement.html
+
+# ── DIGITAL SERVICES ─────────────────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/digital-services/ge-app.html
+https://www.greateasternlife.com/sg/en/customer-services/digital-services/great-id.html
+
+# ── INSURANCE GUIDES ─────────────────────────────────────────────────────────
+
+https://www.greateasternlife.com/sg/en/customer-services/insurance-guides/your-guide-to-life-insurance-pdf.html
+https://www.greateasternlife.com/sg/en/customer-services/insurance-guides/your-guide-to-health-insurance-pdf.html
+https://www.greateasternlife.com/sg/en/customer-services/insurance-guides/your-guide-to-investment-linked-insurance-plans-pdf.html
+https://www.greateasternlife.com/sg/en/customer-services/insurance-guides/your-guide-to-nomination-of-insurance-nominees-pdf.html
