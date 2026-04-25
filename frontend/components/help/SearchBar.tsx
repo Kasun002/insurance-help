@@ -8,20 +8,34 @@ interface SearchBarProps {
   initialQuery?: string
   placeholder?: string
   autoFocus?: boolean
+  /** If provided, fires on every keystroke (controlled from parent) */
+  onQueryChange?: (value: string) => void
 }
 
 export default function SearchBar({
   initialQuery = '',
   placeholder = 'Search guides or ask a question...',
   autoFocus = false,
+  onQueryChange,
 }: SearchBarProps) {
   const [query, setQuery] = useState(initialQuery)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Sync when initialQuery changes (e.g. URL navigation)
+  useEffect(() => {
+    setQuery(initialQuery)
+  }, [initialQuery])
+
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus()
   }, [autoFocus])
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value
+    setQuery(val)
+    onQueryChange?.(val)
+  }
 
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -37,7 +51,7 @@ export default function SearchBar({
           ref={inputRef}
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleChange}
           placeholder={placeholder}
           aria-label="Search"
           className="w-full rounded-lg border border-slate-300 bg-white pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"

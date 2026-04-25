@@ -1,5 +1,14 @@
 import { apiFetch } from './client'
-import type { ChatSession, ChatMessage } from '@/types/api'
+import type { ChatSession, SourceCitation } from '@/types/api'
+
+export interface ChatMessageResponse {
+  message_id: string
+  session_id: string
+  role: 'user' | 'assistant'
+  content: string
+  sources: SourceCitation[]
+  created_at: string
+}
 
 export async function createSession(seedArticleId?: string): Promise<ChatSession> {
   return apiFetch<ChatSession>('/chat/sessions', {
@@ -8,8 +17,11 @@ export async function createSession(seedArticleId?: string): Promise<ChatSession
   })
 }
 
-export async function sendMessage(sessionId: string, message: string): Promise<ChatMessage> {
-  return apiFetch<ChatMessage>(`/chat/sessions/${sessionId}/messages`, {
+export async function sendMessage(
+  sessionId: string,
+  message: string
+): Promise<ChatMessageResponse> {
+  return apiFetch<ChatMessageResponse>(`/chat/sessions/${sessionId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ message }),
   })

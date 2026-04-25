@@ -38,7 +38,7 @@ export default function Header() {
 
         {/* Mobile hamburger */}
         <button
-          className="sm:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100"
+          className="sm:hidden p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
           aria-label="Toggle menu"
           onClick={() => setMenuOpen((v) => !v)}
         >

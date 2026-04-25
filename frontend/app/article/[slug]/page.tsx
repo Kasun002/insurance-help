@@ -1,11 +1,13 @@
 import { fetchArticle } from '@/lib/api/articles'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import { Badge } from '@/components/ui/badge'
 import Breadcrumb from '@/components/help/Breadcrumb'
 import ArticleContent from '@/components/help/ArticleContent'
 import ArticleAttachments from '@/components/help/ArticleAttachments'
 import RelatedArticles from '@/components/help/RelatedArticles'
 import AskAiCta from '@/components/help/AskAiCta'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Phone, MapPin } from 'lucide-react'
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -62,7 +64,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       )}
 
       {/* Related articles */}
-      <RelatedArticles ids={article!.related_article_ids} />
+      <Suspense fallback={<div className="mt-10 pt-6 border-t border-slate-200 space-y-3"><Skeleton className="h-4 w-32 mb-4" />{[1,2].map(i=><Skeleton key={i} className="h-20 rounded-xl"/>)}</div>}>
+        <RelatedArticles ids={article!.related_article_ids} />
+      </Suspense>
 
       {/* Ask AI CTA */}
       <AskAiCta articleId={article!.id} />

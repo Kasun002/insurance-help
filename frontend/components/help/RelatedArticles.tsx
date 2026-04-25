@@ -4,6 +4,7 @@ import { useQueries } from '@tanstack/react-query'
 import { fetchArticle } from '@/lib/api/articles'
 import ArticleCard from './ArticleCard'
 import { Skeleton } from '@/components/ui/skeleton'
+import ErrorState from '@/components/shared/ErrorState'
 
 interface RelatedArticlesProps {
   ids: string[]
@@ -21,6 +22,7 @@ export default function RelatedArticles({ ids }: RelatedArticlesProps) {
   })
 
   const isLoading = results.some((r) => r.isLoading)
+  const hasError = results.every((r) => r.isError)
   const articles = results.flatMap((r) => (r.data ? [r.data] : []))
 
   if (slugsToFetch.length === 0) return null
@@ -34,6 +36,8 @@ export default function RelatedArticles({ ids }: RelatedArticlesProps) {
             <Skeleton key={id} className="h-20 rounded-xl" />
           ))}
         </div>
+      ) : hasError ? (
+        <ErrorState message="Could not load related articles." />
       ) : (
         <div className="space-y-3">
           {articles.map((article) => (

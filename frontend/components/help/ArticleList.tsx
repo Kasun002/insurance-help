@@ -23,7 +23,7 @@ export default function ArticleList({ articles, subcategories, categoryIcon }: A
         <div className="flex flex-wrap gap-2 mb-6" role="group" aria-label="Filter by subcategory">
           <button
             onClick={() => setActive('all')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${
               active === 'all'
                 ? 'bg-slate-900 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -35,7 +35,7 @@ export default function ArticleList({ articles, subcategories, categoryIcon }: A
             <button
               key={sub.id}
               onClick={() => setActive(sub.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3 py-2 min-h-[44px] rounded-full text-sm font-medium transition-colors ${
                 active === sub.id
                   ? 'bg-slate-900 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -58,7 +58,7 @@ export default function ArticleList({ articles, subcategories, categoryIcon }: A
           No articles in this subcategory.
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.map((article) => (
             <ArticleCard key={article.id} article={article} categoryIcon={categoryIcon} />
           ))}
