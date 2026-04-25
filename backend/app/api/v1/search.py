@@ -16,8 +16,8 @@ def search_articles(
 ) -> SearchResponse:
     if not q.strip():
         raise ValidationError("Query parameter 'q' must not be empty")
-    if len(q) > 500:
-        raise ValidationError("Query parameter 'q' must be 500 characters or fewer")
+    if len(q) > 200:
+        raise ValidationError("Query parameter 'q' must be 200 characters or fewer")
 
     results = service.search(query=q.strip(), limit=limit)
 
