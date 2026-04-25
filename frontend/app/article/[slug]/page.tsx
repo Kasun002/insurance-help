@@ -1,9 +1,16 @@
 import { fetchArticle } from '@/lib/api/articles'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Badge } from '@/components/ui/badge'
+import Breadcrumb from '@/components/help/Breadcrumb'
+import ArticleContent from '@/components/help/ArticleContent'
+import ArticleAttachments from '@/components/help/ArticleAttachments'
+import RelatedArticles from '@/components/help/RelatedArticles'
+import AskAiCta from '@/components/help/AskAiCta'
+import { Phone, MapPin } from 'lucide-react'
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+
   let article
   try {
     article = await fetchArticle(slug)
@@ -12,68 +19,53 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="text-sm text-slate-500 mb-6 flex items-center gap-1 flex-wrap">
-          {article!.breadcrumb.map((item, i) => (
-            <span key={i} className="flex items-center gap-1">
-              {i > 0 && <span>/</span>}
-              {item.href ? (
-                <Link href={item.href} className="hover:text-slate-700">{item.label}</Link>
-              ) : (
-                <span className="text-slate-800 font-medium">{item.label}</span>
-              )}
-            </span>
-          ))}
-        </nav>
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      {/* Breadcrumb */}
+      <Breadcrumb items={article!.breadcrumb} />
 
-        {/* Header */}
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">{article!.title}</h1>
-        <div className="flex items-center gap-3 text-xs text-slate-400 mb-6">
-          {article!.updated_at && <span>Updated {article!.updated_at}</span>}
-          <span>{article!.read_time_min} min read</span>
-          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{article!.category.name}</span>
-        </div>
-
-        {/* Content */}
-        <div className="prose prose-slate max-w-none mb-8 whitespace-pre-wrap text-slate-700 text-sm leading-relaxed">
-          {article!.content_markdown}
-        </div>
-
-        {/* Attachments */}
-        {article!.attachments.length > 0 && (
-          <div className="mb-8">
-            <h2 className="font-semibold text-slate-800 mb-3">Downloads</h2>
-            <div className="space-y-2">
-              {article!.attachments.map((att, i) => (
-                <a
-                  key={i}
-                  href={att.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-3 hover:border-slate-300 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">📎</span>
-                    <span className="text-sm text-slate-700">{att.label}</span>
-                  </div>
-                  <span className="text-xs text-slate-400">Download</span>
-                </a>
-              ))}
-            </div>
-          </div>
+      {/* Header */}
+      <h1 className="text-2xl font-bold text-slate-900 mb-3 leading-snug">{article!.title}</h1>
+      <div className="flex items-center gap-3 flex-wrap mb-8">
+        {article!.updated_at && (
+          <span className="text-xs text-slate-400">Updated {article!.updated_at}</span>
         )}
-
-        {/* Contact */}
-        {(article!.contact?.phone || article!.contact?.postal_address) && (
-          <div className="mb-8 bg-slate-100 rounded-xl p-4 text-sm text-slate-600">
-            <h2 className="font-semibold text-slate-800 mb-2">Contact</h2>
-            {article!.contact.phone && <p>Phone: {article!.contact.phone}</p>}
-            {article!.contact.postal_address && <p>{article!.contact.postal_address}</p>}
-          </div>
-        )}
+        <span className="text-xs text-slate-400">{article!.read_time_min} min read</span>
+        <Badge variant="secondary">{article!.category.name}</Badge>
+        <Badge variant="outline">{article!.subcategory.name}</Badge>
       </div>
-    </main>
+
+      {/* Main content */}
+      <ArticleContent content_markdown={article!.content_markdown} />
+
+      {/* Attachments */}
+      <ArticleAttachments attachments={article!.attachments} />
+
+      {/* Contact */}
+      {(article!.contact?.phone || article!.contact?.postal_address) && (
+        <div className="mb-8 bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <h2 className="text-base font-semibold text-slate-800 mb-3">Contact</h2>
+          {article!.contact.phone && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 mb-1.5">
+              <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <a href={`tel:${article!.contact.phone}`} className="hover:text-slate-900">
+                {article!.contact.phone}
+              </a>
+            </div>
+          )}
+          {article!.contact.postal_address && (
+            <div className="flex items-start gap-2 text-sm text-slate-600">
+              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+              <span>{article!.contact.postal_address}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Related articles */}
+      <RelatedArticles ids={article!.related_article_ids} />
+
+      {/* Ask AI CTA */}
+      <AskAiCta articleId={article!.id} />
+    </div>
   )
 }
