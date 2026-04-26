@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.config import get_settings
-from app.core.exceptions import GuardrailError, NotFoundError, SessionExpiredError, ValidationError
+from app.core.exceptions import GuardrailError, NotFoundError, ValidationError
 from app.core.guardrails import BaseInputGuardrail, BaseOutputGuardrail, InputGuardrail, OutputGuardrail
 from app.models.domain import Article, Message, Session
 from app.repositories.base import BaseArticleRepo
@@ -59,7 +59,7 @@ class ChatService:
     def get_session(self, session_id: str) -> Session:
         session = self._sessions.get(session_id)
         if session is None:
-            raise SessionExpiredError()
+            raise NotFoundError(f"Session '{session_id}' not found or has expired.")
         return session
 
     def get_article(self, article_id: str) -> Article | None:
@@ -72,7 +72,7 @@ class ChatService:
         self,
         session_id: str,
         user_content: str,
-    ) -> RAGResponse:
+    ) -> tuple[RAGResponse, str]:
         """
         Append user message, call RAGService with full history,
         append assistant response, return RAGResponse.
@@ -83,8 +83,15 @@ class ChatService:
         if len(user_content) > max_len:
             raise ValidationError(f"Message must be {max_len} characters or fewer")
 
-        # ── Resolve session + history first so guardrail knows conversation state ──
-        session = self.get_session(session_id)
+        # ── Resolve session — auto-create if expired/not found ────────────────
+        # Sessions are in-memory and lost on restart. Rather than erroring,
+        # silently create a new session and return its ID in the response so
+        # the client can update its stored session_id transparently.
+        session = self._sessions.get(session_id)
+        if session is None:
+            session = self._sessions.create()
+            session_id = session.session_id
+
         existing_history = self._sessions.get_messages(session_id)
 
         # ── Input guardrail ────────────────────────────────────────────────────
@@ -143,7 +150,7 @@ class ChatService:
         )
         self._sessions.append_message(session_id, assistant_msg)
 
-        return rag_response
+        return rag_response, session_id
 
     def get_messages(self, session_id: str) -> list[Message]:
         self.get_session(session_id)  # validates existence

@@ -74,7 +74,12 @@ class GeminiClient(BaseLLMClient):
             except Exception as exc:
                 last_exc = exc
                 exc_str = str(exc)
-                is_rate_limit = "429" in exc_str or "quota" in exc_str.lower() or "rate" in exc_str.lower()
+                is_rate_limit = (
+                    "429" in exc_str
+                    or "quota" in exc_str.lower()
+                    or "resource_exhausted" in exc_str.lower()
+                    or "rate_limit" in exc_str.lower()
+                )
                 is_retryable = is_rate_limit or "503" in exc_str or "500" in exc_str
 
                 if not is_retryable or attempt == self._max_retries:
@@ -92,7 +97,12 @@ class GeminiClient(BaseLLMClient):
 
         # Exhausted retries
         exc_str = str(last_exc) if last_exc else "unknown error"
-        if "429" in exc_str or "quota" in exc_str.lower() or "rate" in exc_str.lower():
+        if (
+            "429" in exc_str
+            or "quota" in exc_str.lower()
+            or "resource_exhausted" in exc_str.lower()
+            or "rate_limit" in exc_str.lower()
+        ):
             raise RateLimitError(
                 "Gemini rate limit reached. Please wait a moment and try again."
             )

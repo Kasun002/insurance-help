@@ -50,21 +50,24 @@ async def send_message(
     # Accept session_id from URL path (primary) or X-Session-Id header (fallback)
     resolved_session_id = session_id if session_id != "_" else (x_session_id or session_id)
 
-    rag_response = await service.send_message(
+    rag_response, used_session_id = await service.send_message(
         session_id=resolved_session_id,
         user_content=body.message,
     )
 
     # Get the assistant message that was just appended to retrieve its ID
-    messages = service.get_messages(resolved_session_id)
+    # used_session_id may differ from resolved_session_id if the session was
+    # auto-recreated (e.g. after a backend restart). The client should persist
+    # the returned session_id to stay in sync.
+    messages = service.get_messages(used_session_id)
     assistant_msg = next(
         (m for m in reversed(messages) if m.role == "assistant"), None
     )
-    message_id = assistant_msg.id if assistant_msg else f"msg_{resolved_session_id}"
+    message_id = assistant_msg.id if assistant_msg else f"msg_{used_session_id}"
 
     return ChatMessageResponse(
         message_id=message_id,
-        session_id=resolved_session_id,
+        session_id=used_session_id,
         role="assistant",
         content=rag_response.content,
         sources=[
