@@ -16,9 +16,10 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const { headers: initHeaders, ...restInit } = init ?? {}
   const res = await fetch(`${getBase()}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-    ...init,
+    headers: { 'Content-Type': 'application/json', ...initHeaders },
+    ...restInit,
   })
   if (!res.ok) {
     const contentType = res.headers.get('content-type') ?? ''
