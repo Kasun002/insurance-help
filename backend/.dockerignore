@@ -21,5 +21,15 @@ tests/
 scripts/
 *.log
 
+# Local vector store — never bake ChromaDB data into the image
+app/data/chroma/
+
+# Raw scrape output — not needed at runtime
+app/data/articles_raw.json
+
+# Docs and markdown — not needed in runtime image
+docs/
+*.md
+
 # OS
 .DS_Store
