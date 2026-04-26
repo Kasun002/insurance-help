@@ -16,7 +16,7 @@ A customer support portal for insurance queries, built with Next.js 19 + FastAPI
 | Vector DB (prod) | pgvector on PostgreSQL (HNSW index) |
 | Article DB (local) | TinyDB (JSON file) |
 | Article DB (prod) | MongoDB |
-| LLM | Gemini 2.0 Flash (`gemini-2.0-flash-exp`) |
+| LLM | Gemini 2.5 Flash (`gemini-2.5-flash`) |
 | Container | Docker multi-stage (3 stages) |
 
 ---
@@ -142,7 +142,7 @@ Guardrails are pure regex/keyword checks — no LLM calls, sub-millisecond per r
 **InputGuardrail** (runs before the RAG pipeline):
 - **PII detection** — blocks queries containing a Singapore NRIC (`S/T/F/G\d{7}[A-Z]`), credit card numbers (16-digit patterns), or SG phone numbers. Returns HTTP 422 with code `GUARDRAIL_VIOLATION`.
 - **Prompt injection** — blocks known jailbreak phrases (`ignore previous instructions`, `act as`, `jailbreak`, `bypass`, and ~15 others).
-- **Topic relevance** — queries over 20 characters with zero overlap against an insurance domain keyword set (~40 terms covering claims, premiums, coverage, hospital, motor, beneficiary, etc.) are rejected as off-topic.
+- **Topic relevance** — queries over 20 characters with zero overlap against an insurance domain keyword set (~40 terms covering claims, premiums, coverage, hospital, motor, beneficiary, etc.) are rejected as off-topic. This check is skipped for follow-up turns (when prior messages already exist in the session), so contextual replies like "Any other requirements?" are not blocked.
 
 **OutputGuardrail** (runs after Gemini responds):
 - **PII redaction** — any PII patterns found in the response are replaced with `[REDACTED]`.
@@ -153,57 +153,17 @@ Guardrails are pure regex/keyword checks — no LLM calls, sub-millisecond per r
 
 ### In-Memory Session Caching
 
-Chat sessions are held in a Python dict inside `SessionRepo` — no external store required. Each session gets a UUID-based ID (`sess_<12hex>`), stores the full message history, and has a 2-hour TTL enforced on read (idle sessions are evicted lazily). Sessions are lost on server restart — an intentional tradeoff for simplicity. The `SESSION_TTL_SECONDS` setting controls the TTL.
+Chat sessions are held in a Python dict inside `SessionRepo` — no external store required. Each session gets a UUID-based ID (`sess_<12hex>`), stores the full message history, and has a 2-hour TTL enforced on read (idle sessions are evicted lazily). Sessions are lost on server restart. When a client sends a message with a stale session ID, the backend silently auto-creates a new session and returns the new `session_id` in the response — the frontend syncs its stored ID automatically with no error shown to the user. The `SESSION_TTL_SECONDS` setting controls the TTL.
 
 ---
 
 ### LLM
 
-**Model:** `gemini-2.0-flash-exp` via the `google-generativeai` SDK.
+**Model:** `gemini-2.5-flash` via the `google-genai` SDK.
 
-`GeminiClient` wraps the synchronous SDK in `asyncio.to_thread` so it does not block FastAPI's event loop. It retries up to `LLM_MAX_RETRIES` (default 3) times with exponential backoff (2s, 4s, 8s) on HTTP 429, 500, and 503 responses. A `RateLimitError` is raised if retries are exhausted on a rate-limit; `LLMError` for everything else.
+`GeminiClient` wraps the synchronous SDK in `asyncio.to_thread` so it does not block FastAPI's event loop. It retries up to `LLM_MAX_RETRIES` (default 3) times with exponential backoff (2s, 4s, 8s) on HTTP 429, 500, and 503 responses. Rate-limit detection matches on `429`, `quota`, `resource_exhausted`, and `rate_limit` — not the broad word `rate` which caused false positives. A `RateLimitError` is raised if retries are exhausted on a quota error; `LLMError` for everything else.
 
 **Token optimisation:** `LLM_TEMPERATURE=0.2` keeps responses factual and deterministic. The RAG pipeline deduplicates chunks before building the prompt (at most one chunk per article), keeping context windows tight. Conversation history is included as a plain `User/Assistant` transcript in the prompt — no overhead from structured message arrays.
-
----
-
-### API Reference
-
-All routes are under `/api/v1`. The health endpoint is public; all others require the `X-API-Key` header when `API_KEY_ENABLED=true`.
-
-**Categories**
-
-| Method | Path | Description | Response |
-|---|---|---|---|
-| `GET` | `/categories` | List all categories | `{ categories: [{ id, name, icon, description, article_count, subcategory_count }] }` |
-| `GET` | `/categories/{category_id}` | Category with subcategories | `{ id, name, icon, description, subcategories: [{ id, name, article_count }] }` |
-
-**Articles**
-
-| Method | Path | Description | Response |
-|---|---|---|---|
-| `GET` | `/categories/{category_id}/articles` | Paginated list; optional `?subcategory=` filter | `{ category, articles: [summary], total, limit, offset }` |
-| `GET` | `/articles/{article_id}` | Full article detail | `{ id, slug, title, content_markdown, steps, document_checklists, attachments, contact, related_article_ids, breadcrumb, … }` |
-
-**Search**
-
-| Method | Path | Query Params | Response |
-|---|---|---|---|
-| `GET` | `/search` | `q` (required), `limit` (default 10, max 50) | `{ query, results: [{ article_id, slug, title, snippet, matched_section, category, subcategory, score, read_time_min }], total, limit }` |
-
-**Chat**
-
-| Method | Path | Request Body | Response |
-|---|---|---|---|
-| `POST` | `/chat/sessions` | `{ seed_article_id? }` | `{ session_id, created_at, seed_article? }` |
-| `POST` | `/chat/sessions/{session_id}/messages` | `{ message }` | `{ message_id, session_id, role, content, sources: [{ article_id, slug, title, section, relevance }], usage: { retrieved_chunks, latency_ms }, created_at }` |
-| `GET` | `/chat/sessions/{session_id}/messages` | — | `{ session_id, messages: [MessageItem] }` |
-
-**Health**
-
-| Method | Path | Response |
-|---|---|---|
-| `GET` | `/health` | `{ status: "ok" }` |
 
 ---
 
@@ -215,7 +175,7 @@ All routes are under `/api/v1`. The health endpoint is public; all others requir
 
 **Guardrails** — block PII, prompt injection, and off-topic queries before they reach the LLM (see above).
 
-**Input validation** — Pydantic schemas enforce types and length limits (`CHAT_MESSAGE_MAX_LEN=2000`, `SEARCH_QUERY_MAX_LEN=200`). FastAPI returns structured 422 responses for invalid payloads.
+**Input validation** — Pydantic schemas enforce types and length limits (`CHAT_MESSAGE_MIN_LEN=5`, `CHAT_MESSAGE_MAX_LEN=2000`, `SEARCH_QUERY_MAX_LEN=200`). FastAPI returns structured 422 responses for invalid payloads. The frontend parses 422 detail arrays and displays the human-readable `msg` field rather than raw `[object Object]`.
 
 ---
 
@@ -268,7 +228,7 @@ Domain modules (`lib/api/categories.ts`, `lib/api/articles.ts`, `lib/api/search.
 **Zustand** (`store/chatStore.ts`) manages the chat widget's client-only state: open/closed, session ID, message list, and `isGenerating` flag. The store handles the full chat lifecycle:
 
 1. **`openChat`** — restores a persisted session from `localStorage` or creates a new one via `POST /chat/sessions`. If opened from an article page, `seed_article_id` is passed so the RAG pipeline can bias retrieval toward that article.
-2. **`sendMessage`** — adds an optimistic user bubble immediately, calls `POST /chat/sessions/{id}/messages`, then appends the assistant response. Uses an `AbortController` so switching sessions mid-flight cancels the in-progress request.
+2. **`sendMessage`** — adds an optimistic user bubble immediately, calls `POST /chat/sessions/{id}/messages`, then appends the assistant response. On each successful response the store syncs `sessionId` from `response.session_id` — if the backend auto-created a new session (e.g. after a restart), the FE picks up the new ID transparently. Uses an `AbortController` so switching sessions mid-flight cancels the in-progress request.
 3. **`resetSession`** — aborts any in-flight request, clears `localStorage`, and resets all state.
 
 Session ID is persisted in `localStorage` (`insurehelp_chat_session`) so the conversation survives page navigations.
@@ -283,5 +243,17 @@ Session ID is persisted in `localStorage` (`insurehelp_chat_session`) so the con
 ### Frontend Security
 
 - `apiFetch` attaches the `X-API-Key` from environment variables as a header, keeping the key out of component code.
-- `ApiError` surfaces HTTP status codes. The chat store treats 404/410 as expired session signals and clears the persisted session rather than retrying with a stale ID.
+- `ApiError` surfaces HTTP status codes. FastAPI 422 validation error arrays are parsed to extract the human-readable `msg` field before displaying to the user.
 - No client-side authentication — all access control is enforced by the backend API key middleware and guardrails.
+
+---
+
+## Running URLs
+
+| Service | Local URL |
+|---|---|
+| Frontend | `http://localhost:3000` |
+| Backend API | `http://localhost:8000/api/v1` |
+| Swagger UI (interactive API docs) | `http://localhost:8000/docs` |
+| ReDoc (API reference) | `http://localhost:8000/redoc` |
+| Health check | `http://localhost:8000/api/v1/health` |
