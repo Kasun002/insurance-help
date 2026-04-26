@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # API key protection — disabled locally, enabled in prod
+    API_KEY_ENABLED: bool = False
+    API_KEY: str = ""
+
     # Guardrails — set False to bypass in dev/tests
     GUARDRAILS_ENABLED: bool = True
 
