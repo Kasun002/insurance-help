@@ -153,7 +153,7 @@ class TestChatSmoke:
 
         r = client.post(
             f"/api/v1/chat/sessions/{session_id}/messages",
-            json={"message": "   "},
+            json={"message": "     "},  # 5 spaces — passes min_length=5 but empty after strip
         )
         assert r.status_code == 400
         assert r.json()["error"]["code"] == "VALIDATION_ERROR"
