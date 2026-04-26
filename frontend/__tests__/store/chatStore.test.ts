@@ -182,21 +182,29 @@ describe('sendMessage', () => {
     expect(last.content).toBe('Rate limit exceeded')
   })
 
-  it('clears stale session on 404 and persists the removal', async () => {
+  it('shows error message on 404 and preserves sessionId (BE handles recovery)', async () => {
     mockSendMessage.mockRejectedValueOnce(new ApiError('Session expired', 404))
 
     await act(async () => { await useChatStore.getState().sendMessage('Hello') })
 
-    expect(useChatStore.getState().sessionId).toBeNull()
-    expect(localStorage.removeItem).toHaveBeenCalledWith('insurehelp_chat_session')
+    const { messages, sessionId } = useChatStore.getState()
+    const last = messages.at(-1)!
+    expect(last.error).toBe(true)
+    expect(last.content).toBe('Session expired')
+    // sessionId is preserved — the BE auto-recovers stale sessions transparently
+    expect(sessionId).toBe(chatSessionFixture.session_id)
   })
 
-  it('clears stale session on 410 (Gone)', async () => {
+  it('shows error message on 410 and preserves sessionId (BE handles recovery)', async () => {
     mockSendMessage.mockRejectedValueOnce(new ApiError('Session gone', 410))
 
     await act(async () => { await useChatStore.getState().sendMessage('Hello') })
 
-    expect(useChatStore.getState().sessionId).toBeNull()
+    const { messages, sessionId } = useChatStore.getState()
+    const last = messages.at(-1)!
+    expect(last.error).toBe(true)
+    // sessionId is preserved — the BE auto-recovers stale sessions transparently
+    expect(sessionId).toBe(chatSessionFixture.session_id)
   })
 
   it('lazily creates a session if sessionId is null before sending', async () => {
