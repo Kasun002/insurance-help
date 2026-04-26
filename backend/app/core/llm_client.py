@@ -9,7 +9,8 @@ import logging
 import time
 from abc import ABC, abstractmethod
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.core.exceptions import LLMError, RateLimitError
 
@@ -33,7 +34,7 @@ class GeminiClient(BaseLLMClient):
         max_retries: int = 3,
         temperature: float = 0.2,
     ) -> None:
-        genai.configure(api_key=api_key)
+        self._client = genai.Client(api_key=api_key)
         self._model_name = model_name
         self._max_retries = max_retries
         self._temperature = temperature
@@ -45,8 +46,8 @@ class GeminiClient(BaseLLMClient):
         Retries up to self._max_retries times with exponential backoff on 429 / 503.
         Raises RateLimitError or LLMError on unrecoverable failure.
         """
-        model = genai.GenerativeModel(
-            model_name=self._model_name,
+        config = types.GenerateContentConfig(
+            temperature=self._temperature,
             system_instruction=system or None,
         )
 
@@ -54,11 +55,12 @@ class GeminiClient(BaseLLMClient):
         for attempt in range(1, self._max_retries + 1):
             t0 = time.perf_counter()
             try:
-                # google-generativeai is synchronous; run in thread pool
+                # google-genai is synchronous; run in thread pool
                 response = await asyncio.to_thread(
-                    model.generate_content,
-                    prompt,
-                    generation_config=genai.GenerationConfig(temperature=self._temperature),
+                    self._client.models.generate_content,
+                    model=self._model_name,
+                    contents=prompt,
+                    config=config,
                 )
                 latency_ms = int((time.perf_counter() - t0) * 1000)
                 logger.info(
@@ -67,7 +69,7 @@ class GeminiClient(BaseLLMClient):
                     latency_ms,
                     attempt,
                 )
-                return response.text
+                return response.text  # ty:ignore[invalid-return-type]
 
             except Exception as exc:
                 last_exc = exc
