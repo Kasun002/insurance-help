@@ -2,6 +2,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
+from app.core.prompts import MSG_GUARDRAIL_BLOCKED, MSG_GUARDRAIL_OFF_TOPIC, MSG_GUARDRAIL_PII
 
 
 class AppError(Exception):
@@ -44,31 +45,17 @@ class GuardrailError(AppError):
     """
 
     _REASON_MAP: dict[str, tuple[str, str]] = {
-        "pii": (
-            "GUARDRAIL_PII",
-            "Your message appears to contain personal information (such as an ID number, "
-            "phone number, or card number). Please remove it and try again.",
-        ),
-        "off_topic": (
-            "GUARDRAIL_OFF_TOPIC",
-            "This assistant only answers questions about Great Eastern insurance products "
-            "and services. Please ask an insurance-related question.",
-        ),
-        "injection": (
-            "GUARDRAIL_BLOCKED",
-            "Your request could not be processed. Please rephrase and try again.",
-        ),
-        "unsafe_output": (
-            "GUARDRAIL_BLOCKED",
-            "Your request could not be processed. Please rephrase and try again.",
-        ),
+        "pii":          ("GUARDRAIL_PII",      MSG_GUARDRAIL_PII),
+        "off_topic":    ("GUARDRAIL_OFF_TOPIC", MSG_GUARDRAIL_OFF_TOPIC),
+        "injection":    ("GUARDRAIL_BLOCKED",   MSG_GUARDRAIL_BLOCKED),
+        "unsafe_output":("GUARDRAIL_BLOCKED",   MSG_GUARDRAIL_BLOCKED),
     }
 
     def __init__(self, reason: str):
         self.reason = reason  # internal only — used for logging
         code, message = self._REASON_MAP.get(
             reason,
-            ("GUARDRAIL_BLOCKED", "Your request could not be processed. Please rephrase and try again."),
+            ("GUARDRAIL_BLOCKED", MSG_GUARDRAIL_BLOCKED),
         )
         super().__init__(code=code, message=message, status_code=400)
 

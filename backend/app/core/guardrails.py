@@ -14,6 +14,8 @@ import re
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from app.core.prompts import GE_HOTLINE, OUTPUT_FALLBACK_DISCLAIMER, OUTPUT_SENSITIVE_DISCLAIMER
+
 logger = logging.getLogger(__name__)
 
 
@@ -165,13 +167,8 @@ _SENSITIVE_TOPICS: tuple[str, ...] = (
     "disability claim",
 )
 
-_GE_HOTLINE = "1800 248 2888"
-_FALLBACK_DISCLAIMER = (
-    "\n\n---\n"
-    "If you need further help, please contact Great Eastern customer service "
-    f"at {_GE_HOTLINE} or visit your nearest branch."
-)
-_SENSITIVE_DISCLAIMER = f"\n\nFor urgent assistance, please call {_GE_HOTLINE}."
+# GE_HOTLINE, OUTPUT_FALLBACK_DISCLAIMER, OUTPUT_SENSITIVE_DISCLAIMER
+# are imported from app.core.prompts — the single source of truth for all text.
 
 
 class OutputGuardrail:
@@ -210,7 +207,7 @@ class OutputGuardrail:
                 "Output guardrail: low-confidence response (len=%d, chunks=%d)",
                 len(content.strip()), retrieved_chunks,
             )
-            content = content.rstrip() + _FALLBACK_DISCLAIMER
+            content = content.rstrip() + OUTPUT_FALLBACK_DISCLAIMER
         return content
 
     # ── Step 3: Safety disclaimer ──────────────────────────────────────────────
@@ -218,10 +215,10 @@ class OutputGuardrail:
     def _check_safety_disclaimer(self, content: str) -> str:
         lower = content.lower()
         topic_hit = any(topic in lower for topic in _SENSITIVE_TOPICS)
-        hotline_present = _GE_HOTLINE in content
+        hotline_present = GE_HOTLINE in content
         if topic_hit and not hotline_present:
             logger.info("Output guardrail: appending safety disclaimer")
-            content = content.rstrip() + _SENSITIVE_DISCLAIMER
+            content = content.rstrip() + OUTPUT_SENSITIVE_DISCLAIMER
         return content
 
 
