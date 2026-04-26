@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import { Sparkles } from 'lucide-react'
-import { useChatStore } from '@/store/chatStore'
+import { Sparkles } from "lucide-react";
+import { useChatStore } from "@/store/chatStore";
 
 const SUGGESTIONS = [
-  'How do I submit a car claim?',
-  'What documents for travel?',
-  'How to change my GIRO?',
-]
+  "How to change my GIRO?",
+  "What documents do I need to submit for a hospitalisation claim?",
+  "What documents for travel?",
+];
 
 export default function EmptyChat() {
-  const sendMessage = useChatStore((s) => s.sendMessage)
+  const sendMessage = useChatStore((s) => s.sendMessage);
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-4">
@@ -18,9 +18,12 @@ export default function EmptyChat() {
         <Sparkles className="h-6 w-6 text-slate-500" />
       </div>
       <div>
-        <p className="font-medium text-slate-800 mb-1">How can I help you today?</p>
+        <p className="font-medium text-slate-800 mb-1">
+          How can I help you today?
+        </p>
         <p className="text-xs text-slate-500">
-          Ask me anything about your insurance — claims, policies, payments and more.
+          Ask me anything about your insurance — claims, policies, payments and
+          more.
         </p>
       </div>
       <div className="flex flex-col gap-2 w-full mt-2">
@@ -35,5 +38,5 @@ export default function EmptyChat() {
         ))}
       </div>
     </div>
-  )
+  );
 }

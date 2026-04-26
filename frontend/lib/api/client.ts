@@ -26,12 +26,17 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     let message = `HTTP ${res.status}`
     if (contentType.includes('application/json')) {
       const body = await res.json().catch(() => ({}))
-      message =
-        body?.error?.message ??
-        body?.error?.detail ??
-        body?.detail ??
-        body?.message ??
-        message
+      // FastAPI 422 validation errors: { detail: [{ msg, loc, type, ... }] }
+      if (Array.isArray(body?.detail)) {
+        message = body.detail
+          .map((e: { msg?: string }) => e.msg ?? JSON.stringify(e))
+          .join(', ')
+      } else {
+        const raw = body?.error?.message ?? body?.error?.detail ?? body?.detail ?? body?.message
+        if (raw != null) {
+          message = typeof raw === 'string' ? raw : JSON.stringify(raw)
+        }
+      }
     }
     throw new ApiError(message, res.status)
   }
