@@ -160,7 +160,7 @@ class CreateSessionResponse(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=_s.CHAT_MESSAGE_MAX_LEN)
+    message: str = Field(..., min_length=5, max_length=_s.CHAT_MESSAGE_MAX_LEN)
 
 
 class SourceCitation(BaseModel):

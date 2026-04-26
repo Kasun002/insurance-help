@@ -18,6 +18,11 @@ class NotFoundError(AppError):
         super().__init__(code="NOT_FOUND", message=message, status_code=404)
 
 
+class SessionExpiredError(AppError):
+    def __init__(self, message: str = "Session not found or has expired. A new session has been started."):
+        super().__init__(code="SESSION_EXPIRED", message=message, status_code=410)
+
+
 class ValidationError(AppError):
     def __init__(self, message: str = "Invalid request"):
         super().__init__(code="VALIDATION_ERROR", message=message, status_code=400)

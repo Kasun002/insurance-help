@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { SendHorizonal } from 'lucide-react'
 
 const MAX_CHARS = 2000
+const MIN_CHARS = 5
 const LINE_HEIGHT = 24 // px
 const MAX_LINES = 4
 
@@ -39,7 +40,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
 
   function submit() {
     const msg = value.trim()
-    if (!msg || disabled) return
+    if (msg.length < MIN_CHARS || disabled) return
     onSend(msg)
     setValue('')
     if (textareaRef.current) {
@@ -73,7 +74,7 @@ export default function ChatInput({ onSend, disabled = false }: ChatInputProps) 
         </div>
         <button
           onClick={submit}
-          disabled={disabled || !value.trim()}
+          disabled={disabled || value.trim().length < MIN_CHARS}
           aria-label="Send message"
           className="shrink-0 flex items-center justify-center w-11 h-11 rounded-lg bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >

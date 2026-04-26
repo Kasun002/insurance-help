@@ -115,7 +115,7 @@ class InputGuardrail:
     # Short queries ("hi", "help") are allowed through.
     _MIN_TOPIC_CHECK_LEN = 20
 
-    def check(self, text: str) -> GuardResult:
+    def check(self, text: str, is_followup: bool = False) -> GuardResult:
         stripped = text.strip()
         lower = stripped.lower()
 
@@ -140,7 +140,10 @@ class InputGuardrail:
                 )
 
         # ── 3. Topic relevance ────────────────────────────────────────────────
-        if len(stripped) >= self._MIN_TOPIC_CHECK_LEN:
+        # Skipped for follow-up turns — the prior conversation already established
+        # insurance context, so short contextual replies ("Any other requirements?")
+        # should not be rejected for lacking insurance keywords.
+        if not is_followup and len(stripped) >= self._MIN_TOPIC_CHECK_LEN:
             tokens = set(re.findall(r"[a-z]+", lower))
             if not tokens & _INSURANCE_KEYWORDS:
                 logger.warning("Input guardrail: off-topic query (tokens=%s)", tokens)
@@ -230,7 +233,7 @@ class OutputGuardrail:
 
 @runtime_checkable
 class BaseInputGuardrail(Protocol):
-    def check(self, text: str) -> GuardResult: ...
+    def check(self, text: str, is_followup: bool = False) -> GuardResult: ...
 
 
 @runtime_checkable

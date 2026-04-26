@@ -140,10 +140,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (err) {
       if (signal.aborted) return
 
-      // 4.3: stale/expired session — clear it so the next send creates a fresh one
-      if (err instanceof ApiError && (err.status === 404 || err.status === 410)) {
+      // Session expired (410) — auto-create a fresh session and retry the message once
+      if (err instanceof ApiError && err.status === 410) {
         persistSessionId(null)
-        set({ sessionId: null })
+        set({ sessionId: null, messages: [] })
+        try {
+          const newSession = await createSession(get().seedArticleId ?? undefined)
+          persistSessionId(newSession.session_id)
+          set({ sessionId: newSession.session_id })
+
+          const retryResponse = await apiSendMessage(newSession.session_id, content, signal)
+          if (signal.aborted) return
+
+          const retryUserMsg = makeOptimisticUserMsg(content, newSession.session_id)
+          const assistantMsg: ChatMessage = {
+            id: retryResponse.message_id,
+            session_id: retryResponse.session_id,
+            role: retryResponse.role,
+            content: retryResponse.content,
+            sources: retryResponse.sources,
+            created_at: retryResponse.created_at,
+          }
+          set((s) => ({
+            messages: [...s.messages, retryUserMsg, assistantMsg],
+            isGenerating: false,
+          }))
+          return
+        } catch {
+          // Retry also failed — fall through to error bubble
+        }
       }
 
       const text = err instanceof Error ? err.message : undefined

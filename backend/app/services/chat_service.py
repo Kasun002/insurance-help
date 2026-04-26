@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.config import get_settings
-from app.core.exceptions import GuardrailError, NotFoundError, ValidationError
+from app.core.exceptions import GuardrailError, NotFoundError, SessionExpiredError, ValidationError
 from app.core.guardrails import BaseInputGuardrail, BaseOutputGuardrail, InputGuardrail, OutputGuardrail
 from app.models.domain import Article, Message, Session
 from app.repositories.base import BaseArticleRepo
@@ -59,10 +59,7 @@ class ChatService:
     def get_session(self, session_id: str) -> Session:
         session = self._sessions.get(session_id)
         if session is None:
-            raise NotFoundError(
-                f"Session '{session_id}' not found or has expired. "
-                "Please start a new session."
-            )
+            raise SessionExpiredError()
         return session
 
     def get_article(self, article_id: str) -> Article | None:
@@ -86,13 +83,20 @@ class ChatService:
         if len(user_content) > max_len:
             raise ValidationError(f"Message must be {max_len} characters or fewer")
 
+        # ── Resolve session + history first so guardrail knows conversation state ──
+        session = self.get_session(session_id)
+        existing_history = self._sessions.get_messages(session_id)
+
         # ── Input guardrail ────────────────────────────────────────────────────
+        # is_followup=True when prior messages exist — topic-relevance check is
+        # skipped for follow-up turns ("Any other requirements?" etc.)
         if self._guardrails_enabled:
-            result = self._input_guard.check(user_content)
+            result = self._input_guard.check(
+                user_content,
+                is_followup=len(existing_history) > 0,
+            )
             if not result.passed:
                 raise GuardrailError(reason=result.reason or "blocked")
-
-        session = self.get_session(session_id)
 
         # Append user message
         user_msg = Message(
@@ -105,7 +109,7 @@ class ChatService:
 
         # Call RAG with full history (excluding the message we just appended
         # so the model sees it as the current query, not history)
-        history = self._sessions.get_messages(session_id)[:-1]
+        history = existing_history
 
         rag_response = await self._rag.answer(
             query=user_content.strip(),
